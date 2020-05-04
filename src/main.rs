@@ -7,13 +7,16 @@ use error::CliError;
 use structopt::StructOpt;
 
 #[derive(StructOpt)]
-#[structopt(name = "seagull", about = "PostgreSQL migration tool")]
+/// PostgreSQL migration tool
+#[structopt(name = "seagull")]
 pub enum Seagull {
     #[structopt(name = "poop")]
     Poop {
         description: String,
     },
     Migrate {},
+
+    /// Sets up the "seagull.toml" config file
     Init {},
 }
 
