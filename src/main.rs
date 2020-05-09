@@ -1,9 +1,10 @@
+mod cli;
 mod config;
 mod error;
 mod init;
 mod poop;
 
-use error::CliError;
+use anyhow::Result;
 use structopt::StructOpt;
 
 #[derive(StructOpt)]
@@ -20,11 +21,13 @@ pub enum Seagull {
     Init {},
 }
 
-fn main() -> Result<(), CliError> {
+fn main() -> Result<()> {
     let args = Seagull::from_args();
 
     match args {
-        Seagull::Poop { description } => {}
+        Seagull::Poop { description } => {
+            cli::handle_poop(description)?;
+        }
         Seagull::Migrate {} => {}
         Seagull::Init {} => {
             init::scaffold_config_file()?;
