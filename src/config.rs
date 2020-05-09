@@ -1,4 +1,5 @@
 use crate::error::CliError;
+use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::{
     fs,
@@ -37,8 +38,10 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Config, CliError> {
-        let contents = fs::read_to_string(path)?;
+    pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Config> {
+        let contents = fs::read_to_string(path).with_context(|| {
+            format!("Failed to find seagull.toml config file. Run `seagull init` to create it.")
+        })?;
         let config: Config = toml::from_str(&contents)?;
         Ok(config)
     }
