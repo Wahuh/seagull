@@ -1,4 +1,3 @@
-use crate::error::CliError;
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -8,7 +7,7 @@ use std::{
 };
 
 #[derive(Deserialize, Serialize)]
-pub struct Database {
+pub struct Postgres {
     #[serde(default)]
     pub host: String,
 
@@ -20,6 +19,18 @@ pub struct Database {
 
     #[serde(default)]
     pub username: String,
+
+    #[serde(default)]
+    pub database: String,
+}
+
+impl Postgres {
+    pub fn connection_string(&self) -> String {
+        String::from(format!(
+            "host={} user={} password={} port={} dbname={}",
+            self.host, self.username, self.password, self.port, self.database
+        ))
+    }
 }
 
 #[derive(Deserialize, Serialize)]
@@ -34,7 +45,7 @@ pub struct Config {
     pub migrations: Migrations,
 
     #[serde(default)]
-    pub database: Database,
+    pub postgres: Postgres,
 }
 
 impl Config {
@@ -46,13 +57,15 @@ impl Config {
         Ok(config)
     }
 
-    pub fn from_input() -> Result<Config, CliError> {
-        print!("What's your database host? ");
+    pub fn from_input() -> Result<Config> {
+        let mut config = Config::default();
+
+        print!("What's your database host? (localhost) ");
         io::stdout().flush()?;
         let mut host = String::new();
         io::stdin().read_line(&mut host)?;
 
-        print!("What's your database username? ");
+        print!("What's your database username? (postgres) ");
         io::stdout().flush()?;
         let mut username = String::new();
         io::stdin().read_line(&mut username)?;
@@ -62,24 +75,39 @@ impl Config {
         let mut password = String::new();
         io::stdin().read_line(&mut password)?;
 
-        print!("What's your database port? ");
+        print!("What's your database port? (5432) ");
         io::stdout().flush()?;
-        let mut port = String::new();
-        io::stdin().read_line(&mut port)?;
-        let port: i32 = port
-            .trim()
-            .parse()
-            .expect("Please enter a positive port number");
+        let mut port_string = String::new();
+        io::stdin().read_line(&mut port_string)?;
 
-        let config = Config {
-            database: Database {
-                host: host.trim().to_string(),
-                username: username.trim().to_string(),
-                port,
-                password: password.trim().to_string(),
-            },
-            migrations: Migrations::default(),
+        if !port_string.trim().is_empty() {
+            let port: i32 = port_string
+                .trim()
+                .parse()
+                .expect("Please enter a positive port number");
+            config.postgres.port = port;
+        }
+
+        print!("What's your database name? (postgres) ");
+        io::stdout().flush()?;
+        let mut database = String::new();
+        io::stdin().read_line(&mut database)?;
+
+        if !host.trim().is_empty() {
+            config.postgres.host = host.trim().to_string();
         };
+
+        if !username.trim().is_empty() {
+            config.postgres.username = username.trim().to_string();
+        }
+        if !password.trim().is_empty() {
+            config.postgres.password = password.trim().to_string();
+        }
+
+        if !database.trim().is_empty() {
+            config.postgres.database = database.trim().to_string()
+        }
+
         Ok(config)
     }
 }
@@ -87,26 +115,20 @@ impl Config {
 impl Default for Config {
     fn default() -> Self {
         Config {
-            migrations: Migrations {
-                dir_path: String::from("migrations"),
-            },
-            database: Database {
-                host: String::from("postgres"),
-                username: String::from("postgres"),
-                password: String::from("postgres"),
-                port: 5432,
-            },
+            migrations: Migrations::default(),
+            postgres: Postgres::default(),
         }
     }
 }
 
-impl Default for Database {
+impl Default for Postgres {
     fn default() -> Self {
-        Database {
-            host: String::from("postgres"),
+        Postgres {
+            host: String::from("localhost"),
             username: String::from("postgres"),
             password: String::from("postgres"),
             port: 5432,
+            database: String::from("postgres"),
         }
     }
 }
@@ -122,13 +144,13 @@ impl Default for Migrations {
 #[cfg(test)]
 mod tests {
     use super::Config;
-    use crate::error::CliError;
+    use anyhow::Result;
     use io::Write;
     use std::io;
     use tempfile::NamedTempFile;
 
     #[test]
-    fn it_reads_from_toml_config_file() -> Result<(), CliError> {
+    fn it_reads_from_toml_config_file() -> Result<()> {
         let config = b"
             [database] \n
             host = \"postgres_host\" \n
@@ -140,10 +162,10 @@ mod tests {
         file.write_all(config)?;
 
         let config = Config::from_file(file.path())?;
-        assert_eq!("postgres_host", config.database.host);
-        assert_eq!(6969, config.database.port);
-        assert_eq!("Chuck", config.database.username);
-        assert_eq!("Norris", config.database.password);
+        assert_eq!("postgres_host", config.postgres.host);
+        assert_eq!(6969, config.postgres.port);
+        assert_eq!("Chuck", config.postgres.username);
+        assert_eq!("Norris", config.postgres.password);
         assert_eq!("migrations", config.migrations.dir_path);
         Ok(())
     }
