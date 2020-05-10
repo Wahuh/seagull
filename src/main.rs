@@ -2,6 +2,7 @@ mod cli;
 mod config;
 mod error;
 mod init;
+mod migrate;
 mod poop;
 
 use anyhow::Result;
@@ -28,7 +29,9 @@ fn main() -> Result<()> {
         Seagull::Poop { description } => {
             cli::handle_poop(description)?;
         }
-        Seagull::Migrate {} => {}
+        Seagull::Migrate {} => {
+            cli::handle_migrate()?;
+        }
         Seagull::Init {} => {
             init::scaffold_config_file()?;
         }
