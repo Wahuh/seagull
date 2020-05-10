@@ -1,11 +1,17 @@
 use crate::{
     config::Config,
+    init::create_toml_config_file,
     migrate::find_migrations,
     poop::{create_sql_file, get_next_version_number},
 };
 use anyhow::{Context, Result};
 use postgres::{Client, NoTls};
 use std::{fs, path::Path};
+
+pub fn handle_init() -> Result<()> {
+    create_toml_config_file()?;
+    Ok(())
+}
 
 pub fn handle_poop(description: String) -> Result<()> {
     let config = Config::from_file("seagull.toml")?;

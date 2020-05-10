@@ -33,7 +33,7 @@ fn main() -> Result<()> {
             cli::handle_migrate()?;
         }
         Seagull::Init {} => {
-            init::scaffold_config_file()?;
+            cli::handle_init()?;
         }
     }
 

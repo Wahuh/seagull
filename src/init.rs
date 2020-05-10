@@ -1,7 +1,8 @@
-use crate::{config::Config, error::CliError};
+use crate::config::Config;
+use anyhow::Result;
 use std::{fs::File, io::Write};
 
-pub fn scaffold_config_file() -> Result<(), CliError> {
+pub fn create_toml_config_file() -> Result<()> {
     let config = Config::from_input()?;
     let toml = toml::to_string(&config)?;
     let mut file = File::create("seagull.toml").unwrap();
