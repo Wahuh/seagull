@@ -1,6 +1,5 @@
 mod cli;
 mod config;
-mod error;
 mod init;
 mod migrate;
 mod poop;
