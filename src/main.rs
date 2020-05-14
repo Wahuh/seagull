@@ -16,7 +16,7 @@ pub enum Seagull {
         description: String,
     },
     Migrate {},
-
+    Remigrate {},
     /// Sets up the "seagull.toml" config file
     Init {},
 }
@@ -30,6 +30,9 @@ fn main() -> Result<()> {
         }
         Seagull::Migrate {} => {
             cli::handle_migrate()?;
+        }
+        Seagull::Remigrate {} => {
+            cli::handle_remigrate()?;
         }
         Seagull::Init {} => {
             cli::handle_init()?;
