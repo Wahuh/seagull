@@ -52,7 +52,7 @@ impl Runner {
         Runner { connection_string }
     }
 
-    pub fn downgrade(&self) -> Result<()> {
+    pub fn restore_database(&self) -> Result<()> {
         let mut client = self.connect()?;
         client
             .batch_execute(
