@@ -4,40 +4,18 @@ mod init;
 mod migrate;
 mod poop;
 
-use anyhow::Result;
+use cli::Seagull;
+use std::process;
 use structopt::StructOpt;
 
-#[derive(StructOpt)]
-/// PostgreSQL migration tool
-#[structopt(name = "seagull")]
-pub enum Seagull {
-    #[structopt(name = "poop")]
-    Poop {
-        description: String,
-    },
-    Migrate {},
-    Remigrate {},
-    /// Sets up the "seagull.toml" config file
-    Init {},
-}
-
-fn main() -> Result<()> {
+fn main() {
     let args = Seagull::from_args();
 
-    match args {
-        Seagull::Poop { description } => {
-            cli::handle_poop(description)?;
-        }
-        Seagull::Migrate {} => {
-            cli::handle_migrate()?;
-        }
-        Seagull::Remigrate {} => {
-            cli::handle_remigrate()?;
-        }
-        Seagull::Init {} => {
-            cli::handle_init()?;
+    match cli::run(args) {
+        Ok(()) => process::exit(0),
+        Err(err) => {
+            eprintln!("{}", err);
+            process::exit(1);
         }
     }
-
-    Ok(())
 }
