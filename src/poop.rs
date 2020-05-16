@@ -3,7 +3,7 @@ use colored::Colorize;
 use std::{
     fs::{self, File},
     io,
-    path::{Path, PathBuf},
+    path::PathBuf,
 };
 
 pub fn handle_poop(description: String, dir_path: String) -> Result<()> {
@@ -29,29 +29,44 @@ fn generate_filename(description: &str, version_number: i32) -> String {
     filename
 }
 
-fn get_next_version_number<P: AsRef<Path>>(dir_path: P) -> Result<i32> {
-    let mut files = fs::read_dir(dir_path)?
+fn get_next_version_number(dir_path: &PathBuf) -> Result<i32> {
+    let mut files = fs::read_dir(dir_path)
+        .with_context(|| {
+            format!("Failed to read the files at {}. Either the path does not exist, the path is not a directory or you do not have permission to access the directory.", dir_path.display())
+        })?
         .map(|res| res.map(|e| e.path()))
         .collect::<Result<Vec<_>, io::Error>>()?;
 
     files.sort();
 
-    match files.last() {
-        Some(path) => {
-            let n = path
+    let next_version_number = match files.last() {
+        Some(file) => {
+            let current_version_number = file
                 .file_name()
-                .unwrap()
+                .with_context(|| format!("Failed to get filename for {}", file.display()))?
                 .to_str()
-                .unwrap()
+                .with_context(|| format!("Failed to convert filename to str {}", file.display()))?
                 .chars()
                 .nth(1)
-                .unwrap()
+                .with_context(|| {
+                    format!(
+                        "Filename for {} is invalid. It should look similar to `V1__inital.sql`",
+                        file.display()
+                    )
+                })?
                 .to_digit(10)
-                .unwrap();
-            return Ok(n as i32 + 1);
+                .with_context(|| {
+                    format!(
+                        "Filename for {} is invalid. It should look similar to `V1__inital.sql`",
+                        file.display()
+                    )
+                })?;
+
+            current_version_number as i32 + 1
         }
-        None => return Ok(0),
+        None => 1,
     };
+    Ok(next_version_number)
 }
 
 fn create_sql_file(file_name: String, dir_path: PathBuf) -> Result<()> {
