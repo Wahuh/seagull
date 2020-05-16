@@ -140,33 +140,3 @@ impl Default for Migrations {
         }
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::Config;
-    use anyhow::Result;
-    use io::Write;
-    use std::io;
-    use tempfile::NamedTempFile;
-
-    #[test]
-    fn it_reads_from_toml_config_file() -> Result<()> {
-        let config = b"
-            [database] \n
-            host = \"postgres_host\" \n
-            port = 6969 \n
-            username = \"Chuck\" \n
-            password = \"Norris\" \n
-        ";
-        let mut file = NamedTempFile::new()?;
-        file.write_all(config)?;
-
-        let config = Config::from_file(file.path())?;
-        assert_eq!("postgres_host", config.postgres.host);
-        assert_eq!(6969, config.postgres.port);
-        assert_eq!("Chuck", config.postgres.username);
-        assert_eq!("Norris", config.postgres.password);
-        assert_eq!("migrations", config.migrations.dir_path);
-        Ok(())
-    }
-}
