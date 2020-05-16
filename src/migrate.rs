@@ -45,11 +45,9 @@ impl Migration {
             })?
             .chars()
             .nth(1)
-            .with_context(|| {
-                format!("Failed to extract the version number from the migration file")
-            })?
+            .context("Failed to extract the version number from the migration file")?
             .to_digit(10)
-            .with_context(|| "The second character of the filename is an invalid version number")?;
+            .context("The second character of the filename is an invalid version number")?;
 
         let migration = Migration {
             path,

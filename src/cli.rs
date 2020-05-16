@@ -5,6 +5,7 @@ use crate::{
     poop::handle_poop,
 };
 use anyhow::Result;
+use std::path::PathBuf;
 use structopt::StructOpt;
 
 #[derive(StructOpt)]
@@ -34,26 +35,26 @@ pub enum Seagull {
 pub fn run(args: Seagull) -> Result<()> {
     match args {
         Seagull::Poop { description } => {
-            let config = Config::from_file("seagull.toml")?;
+            let config = Config::from_file(PathBuf::from("seagull.toml"))?;
             handle_poop(description, config.migrations.dir_path)?;
         }
         Seagull::Migrate { database, dir } => {
-            let dir_path = dir.unwrap_or(String::from("migrations"));
+            let dir_path = dir.unwrap_or_else(|| String::from("migrations"));
 
             if let Some(c) = database {
                 handle_migrate(c, dir_path)?;
             } else {
-                let config = Config::from_file("seagull.toml")?;
+                let config = Config::from_file(PathBuf::from("seagull.toml"))?;
                 handle_migrate(config.postgres.connection_string(), dir_path)?;
             }
         }
         Seagull::Remigrate { database, dir } => {
-            let dir_path = dir.unwrap_or(String::from("migrations"));
+            let dir_path = dir.unwrap_or_else(|| String::from("migrations"));
 
             if let Some(c) = database {
                 handle_remigrate(c, dir_path)?;
             } else {
-                let config = Config::from_file("seagull.toml")?;
+                let config = Config::from_file(PathBuf::from("seagull.toml"))?;
                 handle_remigrate(config.postgres.connection_string(), dir_path)?;
             }
         }

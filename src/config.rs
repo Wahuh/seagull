@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::{
     fs,
     io::{self, Write},
-    path::Path,
+    path::PathBuf,
 };
 
 #[derive(Deserialize, Serialize)]
@@ -26,10 +26,10 @@ pub struct Postgres {
 
 impl Postgres {
     pub fn connection_string(&self) -> String {
-        String::from(format!(
+        format!(
             "host={} user={} password={} port={} dbname={}",
             self.host, self.username, self.password, self.port, self.database
-        ))
+        )
     }
 }
 
@@ -49,9 +49,12 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Config> {
-        let contents = fs::read_to_string(path).with_context(|| {
-            format!("Failed to find seagull.toml config file. Run `seagull init` to create it.")
+    pub fn from_file(path: PathBuf) -> Result<Config> {
+        let contents = fs::read_to_string(&path).with_context(|| {
+            format!(
+                "Failed to find seagull.toml at {}. Run `seagull init` to create it.",
+                &path.display()
+            )
         })?;
         let config: Config = toml::from_str(&contents)?;
         Ok(config)
