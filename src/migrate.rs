@@ -1,12 +1,9 @@
 use anyhow::{Context, Result};
 use postgres::{Client, NoTls};
-use std::{
-    fs,
-    path::{Path, PathBuf},
-};
+use std::{fs, path::PathBuf};
 
 pub fn handle_remigrate(connection_string: String, dir_path: String) -> Result<()> {
-    let migrations = find_migrations(dir_path)?;
+    let migrations = find_migrations(PathBuf::from(dir_path))?;
     let runner = Runner::new(connection_string);
     runner.restore_database()?;
     runner.setup_migration_history_table()?;
@@ -15,7 +12,7 @@ pub fn handle_remigrate(connection_string: String, dir_path: String) -> Result<(
 }
 
 pub fn handle_migrate(connection_string: String, dir_path: String) -> Result<()> {
-    let migrations = find_migrations(dir_path)?;
+    let migrations = find_migrations(PathBuf::from(dir_path))?;
     let runner = Runner::new(connection_string);
     runner.setup_migration_history_table()?;
     runner.run_migrations(migrations)?;
@@ -69,14 +66,16 @@ impl Runner {
 
     pub fn restore_database(&self) -> Result<()> {
         let mut client = self.connect()?;
-        client
-            .batch_execute(
-                "DROP SCHEMA public CASCADE;
+        let sql = "
+            DROP SCHEMA public CASCADE;
             CREATE SCHEMA public;
-        GRANT ALL ON SCHEMA public TO postgres;
-        GRANT ALL ON SCHEMA public TO public;
-        COMMENT ON SCHEMA public IS 'standard public schema';",
-            )
+            GRANT ALL ON SCHEMA public TO postgres;
+            GRANT ALL ON SCHEMA public TO public;
+            COMMENT ON SCHEMA public IS 'standard public schema';
+        ";
+
+        client
+            .batch_execute(sql)
             .context("Failed to wipe database")?;
         Ok(())
     }
@@ -89,10 +88,13 @@ impl Runner {
 
     pub fn setup_migration_history_table(&self) -> Result<()> {
         let mut client = self.connect()?;
+        let sql = "
+            CREATE TABLE IF NOT EXISTS __migration_history ( 
+                version_number INTEGER 
+            );
+        ";
         client
-            .batch_execute(
-                "CREATE TABLE IF NOT EXISTS __migration_history ( version_number INTEGER )",
-            )
+            .batch_execute(sql)
             .with_context(|| "Failed to create __migration_history table")?;
         Ok(())
     }
@@ -144,9 +146,9 @@ impl Runner {
     }
 }
 
-fn find_migrations<P: AsRef<Path>>(dir_path: P) -> Result<Vec<Migration>> {
-    let entries =
-        fs::read_dir(dir_path).with_context(|| format!("Failed to find the directory at"))?;
+fn find_migrations(dir_path: PathBuf) -> Result<Vec<Migration>> {
+    let entries = fs::read_dir(&dir_path)
+        .with_context(|| format!("Failed to find the directory at {}", &dir_path.display()))?;
 
     let mut migrations = Vec::new();
 
