@@ -2,7 +2,12 @@ use crate::config::Config;
 use anyhow::Result;
 use std::{fs::File, io::Write};
 
-pub fn create_toml_config_file() -> Result<()> {
+pub fn handle_init() -> Result<()> {
+    create_toml_config_file()?;
+    Ok(())
+}
+
+fn create_toml_config_file() -> Result<()> {
     let config = Config::from_input()?;
     let toml = toml::to_string(&config)?;
     let mut file = File::create("seagull.toml").unwrap();

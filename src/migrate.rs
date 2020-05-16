@@ -5,7 +5,24 @@ use std::{
     path::{Path, PathBuf},
 };
 
-pub struct Migration {
+pub fn handle_remigrate(connection_string: String, dir_path: String) -> Result<()> {
+    let migrations = find_migrations(dir_path)?;
+    let runner = Runner::new(connection_string);
+    runner.restore_database()?;
+    runner.setup_migration_history_table()?;
+    runner.run_migrations(migrations)?;
+    Ok(())
+}
+
+pub fn handle_migrate(connection_string: String, dir_path: String) -> Result<()> {
+    let migrations = find_migrations(dir_path)?;
+    let runner = Runner::new(connection_string);
+    runner.setup_migration_history_table()?;
+    runner.run_migrations(migrations)?;
+    Ok(())
+}
+
+struct Migration {
     pub sql: String,
     pub path: PathBuf,
     pub version_number: i32,
@@ -43,7 +60,7 @@ impl Migration {
     }
 }
 
-pub struct Runner {
+struct Runner {
     connection_string: String,
 }
 
@@ -129,7 +146,7 @@ impl Runner {
     }
 }
 
-pub fn find_migrations<P: AsRef<Path>>(dir_path: P) -> Result<Vec<Migration>> {
+fn find_migrations<P: AsRef<Path>>(dir_path: P) -> Result<Vec<Migration>> {
     let entries =
         fs::read_dir(dir_path).with_context(|| format!("Failed to find the directory at"))?;
 

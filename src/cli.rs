@@ -1,11 +1,10 @@
 use crate::{
     config::Config,
-    init::create_toml_config_file,
-    migrate::{find_migrations, Runner},
-    poop::{create_sql_file, get_next_version_number},
+    init::handle_init,
+    migrate::{handle_migrate, handle_remigrate},
+    poop::handle_poop,
 };
 use anyhow::Result;
-use std::{fs, path::Path};
 use structopt::StructOpt;
 
 #[derive(StructOpt)]
@@ -63,39 +62,5 @@ pub fn run(args: Seagull) -> Result<()> {
         }
     }
 
-    Ok(())
-}
-
-fn handle_init() -> Result<()> {
-    create_toml_config_file()?;
-    Ok(())
-}
-
-fn handle_remigrate(connection_string: String, dir_path: String) -> Result<()> {
-    let migrations = find_migrations(dir_path)?;
-    let runner = Runner::new(connection_string);
-    runner.restore_database()?;
-    runner.setup_migration_history_table()?;
-    runner.run_migrations(migrations)?;
-    Ok(())
-}
-
-fn handle_poop(description: String, dir_path: String) -> Result<()> {
-    let dir_path = Path::new(&dir_path);
-    if !dir_path.exists() {
-        fs::create_dir_all(dir_path)?;
-        create_sql_file(&description, 1)?;
-    } else {
-        let next_version_number = get_next_version_number(dir_path)?;
-        create_sql_file(&description, next_version_number)?;
-    }
-    Ok(())
-}
-
-fn handle_migrate(connection_string: String, dir_path: String) -> Result<()> {
-    let migrations = find_migrations(dir_path)?;
-    let runner = Runner::new(connection_string);
-    runner.setup_migration_history_table()?;
-    runner.run_migrations(migrations)?;
     Ok(())
 }
