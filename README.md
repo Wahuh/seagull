@@ -2,5 +2,5 @@
 
 <div align="center">
   <!-- Github Actions -->
-  <img src="https://github.com/Wahuh/seagull/workflows/ci.yml/badge.svg" alt="GitHub Actions status" />
+  <img src="https://github.com/Wahuh/seagull/workflows/Continuous%20integration/badge.svg" />
 </div>
