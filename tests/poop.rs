@@ -1,12 +1,10 @@
 mod utils;
 use assert_cmd::Command;
-use std::fs::{self, File};
-use utils::setup_test_dir_with_config;
+use utils::TestDir;
 
 #[test]
 fn poop_creates_sql_file_at_default_dir() {
-    let config = "";
-    let test_dir = setup_test_dir_with_config(config);
+    let test_dir = TestDir::new().with_toml_file("migrations");
 
     let mut cmd = Command::cargo_bin("seagull").unwrap();
     cmd.arg("poop")
@@ -14,22 +12,12 @@ fn poop_creates_sql_file_at_default_dir() {
         .current_dir(test_dir.path())
         .assert()
         .success();
-
-    let is_sql_file_created = test_dir
-        .path()
-        .join("migrations")
-        .join("V1__initial.sql")
-        .exists();
-    assert!(is_sql_file_created);
+    test_dir.assert_exists("V1__initial.sql");
 }
 
 #[test]
 fn poop_creates_sql_file_at_dir_from_config() {
-    let config = "
-        [migrations] \n
-        dir_path = \"src/migrations\" \n
-    ";
-    let test_dir = setup_test_dir_with_config(config);
+    let test_dir = TestDir::new().with_toml_file("src/migrations");
 
     let mut cmd = Command::cargo_bin("seagull").unwrap();
     cmd.arg("poop")
@@ -37,24 +25,14 @@ fn poop_creates_sql_file_at_dir_from_config() {
         .current_dir(test_dir.path())
         .assert()
         .success();
-
-    let is_sql_file_created = test_dir
-        .path()
-        .join("src")
-        .join("migrations")
-        .join("V1__initial.sql")
-        .exists();
-    assert!(is_sql_file_created);
+    test_dir.assert_exists("V1__initial.sql");
 }
 
 #[test]
 fn poop_creates_sql_file_with_incremented_version_number_when_other_migrations_exist() {
-    let config = "";
-    let test_dir = setup_test_dir_with_config(config);
-    let migrations_dir_path = test_dir.path().join("migrations");
-    fs::create_dir_all(&migrations_dir_path).unwrap();
-    File::create(migrations_dir_path.join("V1__initial.sql")).unwrap();
-    File::create(migrations_dir_path.join("V2__create_cars_table.sql")).unwrap();
+    let test_dir = TestDir::new()
+        .with_toml_file("migrations")
+        .with_migrations("migrations_all_unapplied");
 
     let mut cmd = Command::cargo_bin("seagull").unwrap();
     cmd.arg("poop")
@@ -63,10 +41,5 @@ fn poop_creates_sql_file_with_incremented_version_number_when_other_migrations_e
         .assert()
         .success();
 
-    let is_sql_file_created = test_dir
-        .path()
-        .join("migrations")
-        .join("V3__create_users_table.sql")
-        .exists();
-    assert!(is_sql_file_created);
+    test_dir.assert_exists("V3__create_users_table.sql");
 }
