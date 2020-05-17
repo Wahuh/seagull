@@ -1,9 +1,63 @@
+use postgres::{Client, NoTls};
 use std::{
     fs::{self, File},
     io::Write,
     path::{Path, PathBuf},
 };
 use tempfile::TempDir;
+
+pub struct TestDatabase {
+    pub connection_string: String,
+    client: Client,
+}
+
+impl TestDatabase {
+    pub fn connect() -> TestDatabase {
+        let connection_string =
+            String::from("postgres://postgres:postgres@localhost:5432/postgres");
+        TestDatabase {
+            client: Client::connect(&connection_string, NoTls).unwrap(),
+            connection_string,
+        }
+    }
+
+    pub fn clean(&mut self) {
+        let sql = "
+            DROP SCHEMA public CASCADE;
+            CREATE SCHEMA public;
+            GRANT ALL ON SCHEMA public TO postgres;
+            GRANT ALL ON SCHEMA public TO public;
+            COMMENT ON SCHEMA public IS 'standard public schema';
+        ";
+        &self.client.batch_execute(sql);
+    }
+
+    pub fn assert_tables_exist(&mut self, table_names: Vec<&str>) {
+        for table_name in table_names {
+            let sql = "
+                SELECT EXISTS (
+                    SELECT FROM information_schema.tables 
+                    WHERE table_name = ($1)
+                );
+            ";
+            let row = self.client.query_one(sql, &[&table_name]).unwrap();
+            let exists: bool = row.get(0);
+            assert!(exists);
+        }
+    }
+
+    pub fn assert_migration_history_exists(&mut self, version_numbers: Vec<i32>) {
+        let sql = "
+            SELECT version_number
+            FROM __migration_history
+        ";
+        let rows = self.client.query(sql, &[]).unwrap();
+        for (i, row) in rows.iter().enumerate() {
+            let version_number: i32 = row.get(0);
+            assert_eq!(version_number, version_numbers[i]);
+        }
+    }
+}
 
 pub struct TestDir {
     tempdir: TempDir,
