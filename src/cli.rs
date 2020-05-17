@@ -16,7 +16,7 @@ pub enum Seagull {
     Poop { description: String },
     Migrate {
         #[structopt(long)]
-        database: Option<String>,
+        url: Option<String>,
 
         #[structopt(long)]
         dir: Option<String>,
@@ -38,10 +38,10 @@ pub fn run(args: Seagull) -> Result<()> {
             let config = Config::from_file(PathBuf::from("seagull.toml"))?;
             handle_poop(description, config.migrations.dir_path)?;
         }
-        Seagull::Migrate { database, dir } => {
+        Seagull::Migrate { url, dir } => {
             let dir_path = dir.unwrap_or_else(|| String::from("migrations"));
 
-            if let Some(c) = database {
+            if let Some(c) = url {
                 handle_migrate(c, dir_path)?;
             } else {
                 let config = Config::from_file(PathBuf::from("seagull.toml"))?;
