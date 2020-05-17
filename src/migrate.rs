@@ -103,12 +103,16 @@ impl Runner {
         let mut client = self.connect()?;
         client.batch_execute("BEGIN")?;
 
+        // if NULL then return 0 and all migrations will be run
         let row = client
-            .query_one("SELECT version_number from __migration_history", &[])
+            .query_one(
+                "SELECT COALESCE(MAX(version_number), 0) FROM __migration_history",
+                &[],
+            )
             .ok();
 
         let version_number: i32 = match row {
-            Some(row) => row.get("version_number"),
+            Some(row) => row.get(0),
             None => 0,
         };
 

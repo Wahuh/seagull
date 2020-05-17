@@ -1,0 +1,3 @@
+CREATE TABLE dogs (
+  id SERIAL PRIMARY KEY
+);
